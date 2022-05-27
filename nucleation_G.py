@@ -89,6 +89,7 @@ plt.fill_between(list(range(start, end+2)), G_gb_means-G_gb_stderrs, G_gb_means+
 
 ################################################
 
+trans.close()
 plt.xlabel('N (pairs)')
 plt.ylabel('G (kT)')
 #plt.fill_between(list(range(LowerLimit, UpperLimit+1)), np.array(G_means)-np.array(G_stderr), np.array(G_means)+np.array(G_stderr), color='r', alpha=0.2)
