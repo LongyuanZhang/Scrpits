@@ -7,6 +7,7 @@ import sys
 import numpy as np
 import paramiko
 import getpass
+import pandas as pd
 
 # paramiko server connect ####################
 
@@ -49,9 +50,9 @@ for i in range(LowerLimit-1, UpperLimit):
 
 plt.scatter(list(range(LowerLimit, UpperLimit+1)), np.array(G_gcmc_means), label='GCMC NonInteracting Red-Blue')
 
-# Graph-based approach part ####################
+# Graph-based approach part ##################
 
-Mu = 50 # chemical potential
+Mu = -50 # chemical potential in kilojoule/mole
 Temperature = 298.15
 kT = 2.478957 * Temperature / 298.15
 
@@ -62,15 +63,15 @@ dG_means = []
 dG_stderrs = []
 
 for i in range(start, end+1):
-    with sftp.open('/home/lzhang657/Nucleation_send/results/N%s/dG.txt' % i) as f:
-        lines = f.readlines()
-    dG_array = np.loadtxt(lines)
-    dG_mean = -1 * np.log(np.mean(np.exp(-1 * dG_array[~np.isnan(dG_array)]))) + Mu/kT
+    f =  sftp.open('/home/lzhang657/Nucleation_send/results/N%s/dG.txt' % i)
+    dG_array = pd.read_csv(f, header = None).to_numpy().flatten()
+    f.close()
+    dG_mean = -1 * np.log(np.mean(np.exp(-1 * dG_array[~np.isnan(dG_array)]))) - Mu/kT
     dG_means.append(dG_mean)
     samples = []
     for j in range(5000):
         dG_sample = np.random.choice(dG_array, size = 1000, replace = True)
-        dG_sample_mean = -1 * np.log(np.mean(np.exp(-1 * dG_sample[~np.isnan(dG_sample)]))) + Mu/kT
+        dG_sample_mean = -1 * np.log(np.mean(np.exp(-1 * dG_sample[~np.isnan(dG_sample)]))) - Mu/kT
         samples.append(dG_sample_mean)
     dG_stderrs.append(np.std(samples))
 
@@ -85,9 +86,9 @@ G_gb_stderrs = np.sqrt(G_gb_vars)
 
 plt.plot(list(range(start, end+2)), G_gb_means, label='Graph-based approach NI Red-Blue')
 plt.fill_between(list(range(start, end+2)), G_gb_means-G_gb_stderrs, G_gb_means+G_gb_stderrs, color='r', alpha=0.2)
-#plt.fill_between(list(range(start, end+2)), G_means-err_test, G_means+err_test, color='r', alpha=0.2)
+#plt.fill_between(list(range(start, end+2)), G_gb_means-err_test, G_gb_means+err_test, color='r', alpha=0.2)
 
-################################################
+##############################################
 
 trans.close()
 plt.xlabel('N (pairs)')
