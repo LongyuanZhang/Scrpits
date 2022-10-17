@@ -11,12 +11,14 @@ import pandas as pd
 
 # paramiko server connect ####################
 
-pswd = getpass.getpass('CHTC password:')
-trans = paramiko.Transport(('submit-1.chtc.wisc.edu', 22))
-trans.connect(username='lzhang657', password=pswd)
+host_address = 'submit-1.chtc.wisc.edu'
+username = 'lzhang657'
+privatekeyfile = os.path.expanduser('/home/lzhang657/.ssh/chtc_rsa')
+mykey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
 ssh = paramiko.SSHClient()
-ssh._transport = trans
-sftp = paramiko.SFTPClient.from_transport(trans)
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect(hostname=host_address, port=22, username=username, pkey=mykey)
+sftp = ssh.open_sftp()
 
 # GCMC part ##################################
 
@@ -48,7 +50,16 @@ for i in range(LowerLimit-1, UpperLimit):
     G_gcmc_means.append(np.mean(G_i))
     G_gcmc_stderr.append(np.std(G_i))
 
+with open('gcmc_G.txt', 'w') as f:
+    for i in G_gcmc_means:
+        f.write("%s\n" % i)
+
+with open('gcmc_G_err.txt', 'w') as f:
+    for i in G_gcmc_stderr:
+        f.write("%s\n" % i)
+
 plt.scatter(list(range(LowerLimit, UpperLimit+1)), np.array(G_gcmc_means), label='GCMC NonInteracting Red-Blue')
+plt.errorbar(list(range(LowerLimit, UpperLimit+1)), np.array(G_gcmc_means), yerr = G_gcmc_stderr, fmt='.')
 
 # Graph-based approach part ##################
 
@@ -84,13 +95,21 @@ G_gb_stderrs = np.sqrt(G_gb_vars)
 #print(G_stderrs)
 #err_test = np.linspace(0.05, 0.2, 12)
 
+with open('gb_G.txt', 'w') as f:
+    for i in G_gb_means:
+        f.write("%s\n" % i)
+
+with open('gb_G_err.txt', 'w') as f:
+    for i in G_gb_stderrs:
+        f.write("%s\n" % i)
+
 plt.plot(list(range(start, end+2)), G_gb_means, label='Graph-based approach NI Red-Blue')
 plt.fill_between(list(range(start, end+2)), G_gb_means-G_gb_stderrs, G_gb_means+G_gb_stderrs, color='r', alpha=0.2)
 #plt.fill_between(list(range(start, end+2)), G_gb_means-err_test, G_gb_means+err_test, color='r', alpha=0.2)
 
 ##############################################
 
-trans.close()
+ssh.close()
 plt.xlabel('N (pairs)')
 plt.ylabel('G (kT)')
 #plt.fill_between(list(range(LowerLimit, UpperLimit+1)), np.array(G_means)-np.array(G_stderr), np.array(G_means)+np.array(G_stderr), color='r', alpha=0.2)
